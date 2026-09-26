@@ -12,7 +12,7 @@ struct AttractorView: View {
             background
             switch model.phase {
             case .celebrating:
-                CelebrationView()
+                CelebrationView(photo: model.shots.first?.image)
                     .transition(.scale.combined(with: .opacity))
             case .attracting, .locked:
                 VStack(spacing: 0) {
@@ -183,22 +183,40 @@ private struct Confetti: View {
     }
 }
 
+/// The reward: the kid sees the photo they just starred in. The loop runs
+/// both ways, from the photographer to the kid and back.
 private struct CelebrationView: View {
+    let photo: UIImage?
+    @State private var landed = false
+
     var body: some View {
         ZStack {
             Confetti()
-            cheer
+            VStack(spacing: 18) {
+                if let photo {
+                    Image(uiImage: photo)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 210, height: 260)
+                        .clipped()
+                        .padding(8)
+                        .padding(.bottom, 22)
+                        .background(.white, in: .rect(cornerRadius: 6))
+                        .rotationEffect(.degrees(landed ? -5 : 12))
+                        .scaleEffect(landed ? 1 : 0.4)
+                        .shadow(color: .black.opacity(0.3), radius: 14, y: 8)
+                } else {
+                    Image(systemName: "hands.and.sparkles.fill")
+                        .font(.system(size: 120))
+                        .symbolEffect(.bounce, options: .repeat(3))
+                }
+                Text(photo == nil ? "You did it!" : "That's you!")
+                    .font(.system(.largeTitle, design: .rounded, weight: .black))
+            }
+            .foregroundStyle(.white)
         }
-    }
-
-    private var cheer: some View {
-        VStack(spacing: 18) {
-            Image(systemName: "hands.and.sparkles.fill")
-                .font(.system(size: 120))
-                .symbolEffect(.bounce, options: .repeat(3))
-            Text("You did it!")
-                .font(.system(.largeTitle, design: .rounded, weight: .black))
+        .onAppear {
+            withAnimation(.spring(duration: 0.5, bounce: 0.45)) { landed = true }
         }
-        .foregroundStyle(.white)
     }
 }
