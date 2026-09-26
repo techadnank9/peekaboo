@@ -126,3 +126,45 @@ private struct Head: View {
 
 #Preview("Looking away") { SimulatedKid(yaw: 0.8, happy: false) }
 #Preview("At the lens") { SimulatedKid(yaw: 0, happy: true) }
+
+/// A photo-real toddler for stage demos, made with Decart from the cartoon
+/// kid: one shot looking left, one right, one smiling into the lens. The
+/// head turn crossfades between them as `yaw` changes.
+struct RealisticKid: View {
+    var yaw: Double
+
+    static let center = UIImage(named: "kid-center.jpg")
+    static let left = UIImage(named: "kid-left.jpg")
+    static let right = UIImage(named: "kid-right.jpg")
+    static var isAvailable: Bool { center != nil && left != nil && right != nil }
+
+    var body: some View {
+        // SimulatedKid's positive yaw turns the face to screen-right.
+        let toRight = max(0, min(1, (yaw - 0.12) / 0.3))
+        let toLeft = max(0, min(1, (-yaw - 0.12) / 0.3))
+        let atLens = max(0, 1 - toRight - toLeft)
+        TimelineView(.animation) { context in
+            let breathe = 1 + 0.008 * sin(context.date.timeIntervalSinceReferenceDate * 1.6)
+            ZStack {
+                layer(Self.left, opacity: toLeft)
+                layer(Self.right, opacity: toRight)
+                layer(Self.center, opacity: atLens)
+            }
+            .scaleEffect(breathe)
+        }
+        .clipped()
+    }
+
+    private func layer(_ image: UIImage?, opacity: Double) -> some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        .opacity(opacity)
+    }
+}

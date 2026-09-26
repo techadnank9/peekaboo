@@ -69,7 +69,11 @@ private struct Viewfinder: View {
         ZStack {
             Group {
                 if CameraService.isSimulated {
-                    SimulatedKid(yaw: model.subjectYaw, happy: model.phase != .attracting)
+                    if RealisticKid.isAvailable {
+                        RealisticKid(yaw: model.subjectYaw)
+                    } else {
+                        SimulatedKid(yaw: model.subjectYaw, happy: model.phase != .attracting)
+                    }
                 } else {
                     CameraPreview(camera: model.camera)
                 }

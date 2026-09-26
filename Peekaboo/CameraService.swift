@@ -76,6 +76,10 @@ final class CameraService: NSObject, @unchecked Sendable {
     func capturePhoto(attractor: Attractor) {
         if Self.isSimulated {
             Task { @MainActor in
+                if let photo = RealisticKid.center {
+                    onPhoto?(photo)
+                    return
+                }
                 let renderer = ImageRenderer(content: SimulatedKid(yaw: 0, happy: true)
                     .frame(width: 600, height: 800))
                 renderer.scale = 2

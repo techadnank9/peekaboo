@@ -14,6 +14,14 @@ The outer display sits right beside the camera, facing your kid. Peekaboo puts a
 [![On-device](https://img.shields.io/badge/privacy-on--device%20first-success)](#privacy)
 [![Built at Bitrig Hacks](https://img.shields.io/badge/built%20at-Bitrig%20Hacks%20%C2%B7%20YC-FF6600)](https://bitrig.com)
 
+<br/>
+
+<img src="docs/duo-cartoon-you.png" width="320" alt="Peekaboo running on the iPhone Duo simulator in Bitrig: the kid's screen reveals Cartoon you!"/>&nbsp;
+<img src="docs/decart-tryon.png" width="240" alt="Decart virtual try-on: the kid in a yellow animal onesie"/>&nbsp;
+<img src="docs/decart-cartoon.png" width="200" alt="Decart Cartoon Me result"/>
+
+<sub>Left: Peekaboo on the iPhone Duo simulator in Bitrig, with the vertical Duo toolbar, "Cartoon you!" on the kid's screen and a strip of cartoon shots. Middle: virtual try-on. Right: Cartoon Me.</sub>
+
 </div>
 
 ---
