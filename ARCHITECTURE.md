@@ -64,6 +64,7 @@ Both displays read the same `PeekabooModel` instance, so no messages are passed 
 | `AttractorView.swift` | Outer display content: `LensBeacon` (chevrons pointing at the lens), four attractors (`PeekabooFace`, `BubbleField`, `Starburst`, `WigglePuppy`), and `CelebrationView` with `Confetti` bursting from the lens edge. Tapping it takes the shot. |
 | `SimulatedKid.swift` | Cartoon toddler in a room, used in Simulator. `yaw` turns the head (0 means facing the lens), and `happy` switches to a grin. |
 | `PhotoSaver.swift` | Saves each shot to the photo library, asking for add-only access. |
+| `Chimes.swift` | Small `AVAudioEngine` synth: a jingle per attractor, repeated every 4 s while waiting for a look, and a fanfare on each shot. |
 
 ## 4. Flows
 
