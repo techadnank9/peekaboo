@@ -78,6 +78,8 @@ struct Shot: Identifiable {
     let date = Date()
     /// The kid as a cartoon, from Cartoon Me.
     var cartoon: UIImage?
+    /// The kid in a costume, from virtual try-on.
+    var tryOnVideo: URL?
 }
 
 /// State shared by the capture interface on the inner display and the
@@ -101,7 +103,6 @@ final class PeekabooModel {
     /// The full instruction sent to Decart, built from the parent's choices.
     var cartoonPromptPreview: String {
         var parts = ["Turn this child into \(cartoonStyle.prompt)", cartoonPose.prompt(with: attractor)]
-        if let costume = cartoonCostume.prompt { parts.append(costume) }
         let extra = cartoonPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         if !extra.isEmpty { parts.append(extra) }
         parts.append("keep the child's face recognizable, bright and joyful")
@@ -110,6 +111,8 @@ final class PeekabooModel {
 
     /// The outer display is showing the cartoon version of the last shot.
     var revealingCartoon = false
+    /// The outer display is playing the try-on video of the last shot.
+    var revealingTryOn = false
     var outerEnabled = true
     /// Set by the system through the accessory's availability callback.
     var outerAvailable = false
@@ -196,29 +199,45 @@ final class PeekabooModel {
 
     private func cartoonize(_ shot: Shot) {
         let prompt = cartoonPromptPreview
+        // With an outfit picked, try-on goes first: it's quicker and it moves.
+        if let outfit = cartoonCostume.prompt {
+            Task { @MainActor in
+                if let video = try? await DecartClient.tryOn(shot.image, outfit: outfit),
+                   let i = shots.firstIndex(where: { $0.id == shot.id }) {
+                    shots[i].tryOnVideo = video
+                    await reveal(tryOn: true)
+                }
+            }
+        }
         Task { @MainActor in
             let cartoon = try? await DecartClient.cartoonize(shot.image, prompt: prompt)
             if let cartoon, let i = shots.firstIndex(where: { $0.id == shot.id }) {
                 shots[i].cartoon = cartoon
                 PhotoSaver.save(cartoon)
-                // Reveal it to the kid, unless they're mid-look.
-                if phase != .locked {
-                    cooldownUntil = Date().addingTimeInterval(4)
-                    withAnimation(.snappy) {
-                        revealingCartoon = true
-                        phase = .celebrating
-                    }
-                    if soundOn { Chimes.shared.celebrate() }
-                    try? await Task.sleep(for: .seconds(3.5))
-                    withAnimation(.smooth) {
-                        revealingCartoon = false
-                        phase = .attracting
-                    }
-                    subjectAttention = false
-                }
+                await reveal(tryOn: false)
             }
             if demoRunning { scheduleNextGlance(after: 2.0) }
         }
+    }
+
+    /// Shows the cartoon or the try-on video to the kid, unless they're mid-look.
+    private func reveal(tryOn: Bool) async {
+        while revealingCartoon || revealingTryOn { try? await Task.sleep(for: .milliseconds(300)) }
+        guard phase != .locked else { return }
+        cooldownUntil = Date().addingTimeInterval(tryOn ? 6 : 4)
+        withAnimation(.snappy) {
+            revealingTryOn = tryOn
+            revealingCartoon = !tryOn
+            phase = .celebrating
+        }
+        if soundOn { Chimes.shared.celebrate() }
+        try? await Task.sleep(for: .seconds(tryOn ? 5 : 3.5))
+        withAnimation(.smooth) {
+            revealingCartoon = false
+            revealingTryOn = false
+            phase = .attracting
+        }
+        subjectAttention = false
     }
 
     // MARK: Simulator subject

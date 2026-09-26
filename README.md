@@ -60,6 +60,7 @@ Half-fold the phone and stand it on a table, and it becomes a **hands-free table
 - 👁️ **Look-to-shoot.** Vision's face yaw and pitch give a 0–1 gaze score; 0.2 s of eye contact above 0.8 fires the shutter, then a cooldown stops double shots.
 - 🎉 **Reward loop.** Confetti from the lens edge plus the kid's own photo as a bouncing print, with a fanfare.
 - 🪄 **Cartoon Me.** Each shot is turned into a Pixar-style cartoon of the kid by [Decart](https://decart.ai)'s Lucy image model. Moments later the outer display reveals **"Cartoon you!"**, and the parent gets both versions in the gallery. It's opt-in with its own switch, as the only feature that uses the network.
+- 👗 **Virtual try-on.** Pick an outfit (yellow electric-mouse onesie, goggles and overalls, big-ears outfit, superhero, princess, dinosaur) and Decart's **Lucy VTON** model dresses the kid in it. The photo becomes a 2-second clip on the device (`AVAssetWriter`), the job is submitted and polled, and the outer display loops **"Dress-up you!"**. It takes about 11 s.
 - 🎨 **Cartoon Studio.** The parent directs the cartoon: pick a **style** (Pixar 3D, anime, superhero, astronaut, fairy tale, claymation, dino rider), a **costume** (Pikachu onesie, Minion overalls, Mickey outfit, superhero, princess, dinosaur), a **pose** (as taken, waving, flying, dancing, jumping, hugging the character) and add **their own prompt** ("wearing a birthday hat", "with our cat"). A live preview shows the exact instruction sent to Decart.
 - 🎵 **A jingle for each character.** A tiny built-in synth (`AVAudioEngine`): *pi-ka-chu*, *ba-na-na*, *pee-ka-BOO*, *woof woof*. It repeats every 4 s while waiting for a look.
 - 👆 **The kid can shoot too.** Tapping the outer display takes the photo.
@@ -221,7 +222,7 @@ The Simulator has no camera, so Peekaboo swaps in a cartoon toddler who looks ev
 - Built in one afternoon at **Bitrig Hacks: iPhone Duo Edition** (YC office, San Francisco, September 26, 2026), with [Bitrig](https://bitrig.com) and Xcode 27.1 beta.
 - Character animations come from creators on [LottieFiles](https://lottiefiles.com) under the Lottie Simple License. Pikachu, the Minions, Mickey Mouse and other characters are trademarks of their respective owners; this is a non-commercial hackathon demo with no affiliation or endorsement.
 - Animation playback by [Lottie for iOS](https://github.com/airbnb/lottie-ios) (Airbnb).
-- Cartoon Me by [Decart](https://decart.ai) (Lucy Image 2).
+- Cartoon Me and virtual try-on by [Decart](https://decart.ai) (Lucy Image 2, Lucy VTON). Decart refuses trademarked names in prompts, so outfits are described, not named.
 
 ## License
 

@@ -1,3 +1,4 @@
+import AVKit
 import Lottie
 import SwiftUI
 
@@ -12,6 +13,9 @@ struct AttractorView: View {
         ZStack {
             background
             switch model.phase {
+            case .celebrating where model.revealingTryOn && model.shots.first?.tryOnVideo != nil:
+                TryOnReveal(url: model.shots.first!.tryOnVideo!)
+                    .transition(.scale.combined(with: .opacity))
             case .celebrating:
                 CelebrationView(photo: model.revealingCartoon ? model.shots.first?.cartoon : model.shots.first?.image,
                                 title: model.revealingCartoon ? "Cartoon you!" : "That's you!")
@@ -189,5 +193,35 @@ struct LureStage<Content: View>: View {
             .animation(.spring(duration: 0.9, bounce: 0.35), value: lure)
             .animation(.spring(duration: 0.6, bounce: 0.45), value: locked)
         }
+    }
+}
+
+/// The try-on video: the kid, dressed up, looping on the outer display.
+private struct TryOnReveal: View {
+    let url: URL
+    @State private var player = AVQueuePlayer()
+    @State private var looper: AVPlayerLooper?
+
+    var body: some View {
+        ZStack {
+            VStack(spacing: 16) {
+                VideoPlayer(player: player)
+                    .disabled(true)
+                    .aspectRatio(3 / 4, contentMode: .fit)
+                    .clipShape(.rect(cornerRadius: 24))
+                    .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(.white, lineWidth: 6) }
+                    .shadow(color: .black.opacity(0.3), radius: 16, y: 8)
+                    .padding(.horizontal, 28)
+                Text("Dress-up you!")
+                    .font(.system(.largeTitle, design: .rounded, weight: .black))
+                    .foregroundStyle(.white)
+            }
+        }
+        .onAppear {
+            player.isMuted = true
+            looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+            player.play()
+        }
+        .onDisappear { player.pause() }
     }
 }

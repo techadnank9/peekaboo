@@ -78,7 +78,7 @@ enum CartoonPose: String, CaseIterable, Identifiable {
         case .flying: "flying through the air with arms stretched out"
         case .dancing: "dancing joyfully"
         case .jumping: "jumping in the air with excitement"
-        case .hugging: "giving a big hug to a friendly \(character.title)"
+        case .hugging: "giving a big hug to a cuddly cartoon animal friend"
         }
     }
 }
@@ -116,12 +116,12 @@ enum CartoonCostume: String, CaseIterable, Identifiable {
     var prompt: String? {
         switch self {
         case .none: nil
-        case .pikachu: "wearing a cozy yellow Pikachu onesie with pointy ears on the hood"
-        case .minion: "dressed as a Minion with blue denim overalls and round goggles"
-        case .mickey: "wearing a classic Mickey Mouse outfit with red shorts and round ears"
-        case .superhero: "wearing a bright superhero suit with a cape"
-        case .princess: "wearing a sparkly princess gown and a tiara"
-        case .dinosaur: "wearing a green dinosaur costume with little spikes"
+        case .pikachu: "a cozy bright yellow animal onesie with pointy black-tipped ears on the hood and red circles on the cheeks"
+        case .minion: "blue denim overalls, big round silver goggles and a bright yellow beanie"
+        case .mickey: "red shorts with two white buttons, white gloves and a headband with two big round black ears"
+        case .superhero: "a bright red and blue superhero suit with a flowing cape"
+        case .princess: "a sparkly pink princess gown and a tiara"
+        case .dinosaur: "a green dinosaur costume with little spikes on the hood"
         }
     }
 }
@@ -146,10 +146,14 @@ struct CartoonStudio: View {
                     }
                 }
 
-                Section("Costume") {
+                Section {
                     chips(CartoonCostume.allCases, selected: model.cartoonCostume, title: \.title, symbol: \.symbol) {
                         model.cartoonCostume = $0
                     }
+                } header: {
+                    Text("Virtual try-on")
+                } footer: {
+                    Text("Pick an outfit and Decart's try-on model dresses your kid in it. The outer display plays the video.")
                 }
 
                 Section("Pose") {
