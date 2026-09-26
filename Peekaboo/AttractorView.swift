@@ -160,6 +160,8 @@ struct LottieCharacter: View {
 
     var body: some View {
         LottieView(animation: .named(name))
+            // The main-thread engine renders every feature these files use.
+            .configuration(LottieConfiguration(renderingEngine: .mainThread))
             .playing(loopMode: .loop)
             .resizable()
             .scaledToFit()

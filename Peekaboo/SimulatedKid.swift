@@ -143,28 +143,36 @@ struct RealisticKid: View {
         let toRight = max(0, min(1, (yaw - 0.12) / 0.3))
         let toLeft = max(0, min(1, (-yaw - 0.12) / 0.3))
         let atLens = max(0, 1 - toRight - toLeft)
-        TimelineView(.animation) { context in
-            let breathe = 1 + 0.008 * sin(context.date.timeIntervalSinceReferenceDate * 1.6)
-            ZStack {
-                layer(Self.left, opacity: toLeft)
-                layer(Self.right, opacity: toRight)
-                layer(Self.center, opacity: atLens)
+        GeometryReader { geo in
+            TimelineView(.animation) { context in
+                let breathe = 1 + 0.008 * sin(context.date.timeIntervalSinceReferenceDate * 1.6)
+                ZStack {
+                    layer(Self.left, opacity: toLeft, size: geo.size)
+                    layer(Self.right, opacity: toRight, size: geo.size)
+                    layer(Self.center, opacity: atLens, size: geo.size)
+                }
+                .scaleEffect(breathe)
             }
-            .scaleEffect(breathe)
+            .frame(width: geo.size.width, height: geo.size.height)
         }
         .clipped()
     }
 
-    private func layer(_ image: UIImage?, opacity: Double) -> some View {
+    /// Fills the viewfinder and keeps the face in view: the face sits a bit
+    /// below the middle of these portraits.
+    private func layer(_ image: UIImage?, opacity: Double, size: CGSize) -> some View {
         Group {
             if let image {
+                let scale = max(size.width / image.size.width, size.height / image.size.height)
+                let drawn = CGSize(width: image.size.width * scale, height: image.size.height * scale)
                 Image(uiImage: image)
                     .resizable()
-                    .scaledToFill()
+                    .frame(width: drawn.width, height: drawn.height)
+                    .offset(y: -max(0, drawn.height - size.height) * 0.15)
+                    .frame(width: size.width, height: size.height)
+                    .clipped()
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
         .opacity(opacity)
     }
 }
