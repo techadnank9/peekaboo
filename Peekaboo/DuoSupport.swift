@@ -35,8 +35,8 @@ struct DuoArrangement<Primary: View, Secondary: View>: View {
                 secondary.frame(width: 340)
             }
             VStack(spacing: 0) {
-                primary
-                secondary
+                primary.layoutPriority(1)
+                secondary.fixedSize(horizontal: false, vertical: true)
             }
         }
     }

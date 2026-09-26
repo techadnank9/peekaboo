@@ -98,7 +98,7 @@ private struct Viewfinder: View {
         .foregroundStyle(.white)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .glassEffect(.regular, in: .capsule)
+        .background(.black.opacity(0.5), in: .capsule)
         .padding(12)
     }
 

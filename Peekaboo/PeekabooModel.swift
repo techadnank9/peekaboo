@@ -151,8 +151,14 @@ final class PeekabooModel {
             while !Task.isCancelled, let self {
                 tick += 1
                 if tick % 14 == 0 {
-                    // Toddlers look everywhere except the camera.
-                    wander = (Bool.random() ? 1 : -1) * Double.random(in: 0.45...0.95)
+                    // Toddlers look everywhere except the camera. A look to
+                    // the other side is a quick head turn, not a slow sweep
+                    // through the lens.
+                    let side: Double = Int.random(in: 0..<4) == 0 ? -(wander.sign == .minus ? -1 : 1) : (wander.sign == .minus ? -1 : 1)
+                    wander = side * Double.random(in: 0.45...0.95)
+                    if !subjectAttention, (subjectYaw < 0) != (side < 0) {
+                        subjectYaw = side * 0.5
+                    }
                 }
                 let target = subjectAttention ? 0 : wander
                 subjectYaw += (target - subjectYaw) * (subjectAttention ? 0.3 : 0.12)
