@@ -1,0 +1,30 @@
+name: Peekaboo
+options:
+  bundleIdPrefix: com.techadnank9
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  Peekaboo:
+    type: application
+    platform: iOS
+    sources: [Peekaboo]
+    info:
+      path: Peekaboo/Info.plist
+      properties:
+        CFBundleDisplayName: Peekaboo
+        UILaunchScreen: {}
+        NSCameraUsageDescription: Peekaboo uses the camera to photograph the person or pet in front of it.
+        NSPhotoLibraryAddUsageDescription: Peekaboo saves the photos you take to your library.
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight, UIInterfaceOrientationPortraitUpsideDown]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.techadnank9.peekaboo
+        GENERATE_INFOPLIST_FILE: YES
