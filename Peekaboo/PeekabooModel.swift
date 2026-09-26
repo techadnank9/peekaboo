@@ -94,12 +94,14 @@ final class PeekabooModel {
     var cartoonMe = DecartClient.isAvailable
     var cartoonStyle: CartoonStyle = .pixar
     var cartoonPose: CartoonPose = .asTaken
+    var cartoonCostume: CartoonCostume = .none
     /// The parent's own addition, like "wearing a birthday hat".
     var cartoonPrompt = ""
 
     /// The full instruction sent to Decart, built from the parent's choices.
     var cartoonPromptPreview: String {
         var parts = ["Turn this child into \(cartoonStyle.prompt)", cartoonPose.prompt(with: attractor)]
+        if let costume = cartoonCostume.prompt { parts.append(costume) }
         let extra = cartoonPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         if !extra.isEmpty { parts.append(extra) }
         parts.append("keep the child's face recognizable, bright and joyful")

@@ -83,6 +83,49 @@ enum CartoonPose: String, CaseIterable, Identifiable {
     }
 }
 
+/// Dress-up: an outfit Decart puts the kid in.
+enum CartoonCostume: String, CaseIterable, Identifiable {
+    case none, pikachu, minion, mickey, superhero, princess, dinosaur
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .none: "Own clothes"
+        case .pikachu: "Pikachu"
+        case .minion: "Minion"
+        case .mickey: "Mickey"
+        case .superhero: "Superhero"
+        case .princess: "Princess"
+        case .dinosaur: "Dinosaur"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .none: "tshirt"
+        case .pikachu: "bolt.fill"
+        case .minion: "eyeglasses"
+        case .mickey: "music.note"
+        case .superhero: "bolt.shield.fill"
+        case .princess: "crown.fill"
+        case .dinosaur: "lizard.fill"
+        }
+    }
+
+    var prompt: String? {
+        switch self {
+        case .none: nil
+        case .pikachu: "wearing a cozy yellow Pikachu onesie with pointy ears on the hood"
+        case .minion: "dressed as a Minion with blue denim overalls and round goggles"
+        case .mickey: "wearing a classic Mickey Mouse outfit with red shorts and round ears"
+        case .superhero: "wearing a bright superhero suit with a cape"
+        case .princess: "wearing a sparkly princess gown and a tiara"
+        case .dinosaur: "wearing a green dinosaur costume with little spikes"
+        }
+    }
+}
+
 /// Where the parent sets up Cartoon Me: style, pose and their own touch.
 struct CartoonStudio: View {
     @Bindable var model: PeekabooModel
@@ -100,6 +143,12 @@ struct CartoonStudio: View {
                 Section("Style") {
                     chips(CartoonStyle.allCases, selected: model.cartoonStyle, title: \.title, symbol: \.symbol) {
                         model.cartoonStyle = $0
+                    }
+                }
+
+                Section("Costume") {
+                    chips(CartoonCostume.allCases, selected: model.cartoonCostume, title: \.title, symbol: \.symbol) {
+                        model.cartoonCostume = $0
                     }
                 }
 
