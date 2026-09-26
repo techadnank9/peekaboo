@@ -78,6 +78,31 @@ extension View {
         }
     }
 
+    /// Reports how far down an active camera occlusion reaches into the top
+    /// of this view, such as the inner front camera on iPhone Duo.
+    func onCameraOcclusionChange(_ action: @escaping (CGFloat) -> Void) -> some View {
+        background {
+            GeometryReader { proxy in
+                let clearance = Self.topOcclusion(in: proxy)
+                Color.clear
+                    .onAppear { action(clearance) }
+                    .onChange(of: clearance) { _, new in action(new) }
+            }
+        }
+    }
+
+    private static func topOcclusion(in proxy: GeometryProxy) -> CGFloat {
+        #if compiler(>=6.4)
+        if #available(iOS 27.1, *) {
+            return proxy.reservedRegions(kind: .occlusion)
+                .filter { $0.isActive && $0.frame.minY < 80 }
+                .map(\.frame.maxY)
+                .max() ?? 0
+        }
+        #endif
+        return 0
+    }
+
     private static func activeFold(in proxy: GeometryProxy) -> CGRect? {
         #if compiler(>=6.4)
         if #available(iOS 27.1, *) {

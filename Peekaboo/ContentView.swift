@@ -13,14 +13,20 @@ struct ContentView: View {
             }
             .onFoldChange { divided, _ in
                 withAnimation(.smooth) { model.isTabletop = divided }
+                // Standing on a table means hands off the phone: shoot on a look.
+                if divided { model.autoSnap = true }
             }
             .background(.black)
             .navigationTitle("Peekaboo")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                // On iPhone Duo these bars can stand vertically on the side of
+                // the display. Every item has an icon and a title so it can go
+                // vertical, horizontal or into the overflow menu.
+                ToolbarItem(placement: .topBarPinnedTrailing) {
                     Button("Next Attractor", systemImage: "wand.and.stars") { model.nextAttractor() }
                 }
+                .visibilityPriority(.high)
                 if CameraService.isSimulated {
                     ToolbarItem(placement: .primaryAction) {
                         Button(model.demoRunning ? "Stop Demo" : "Run Demo",
@@ -28,12 +34,18 @@ struct ContentView: View {
                             model.toggleDemo()
                         }
                     }
+                    .visibilityPriority(.high)
                 }
                 ToolbarItem(placement: .secondaryAction) {
                     Button("Photos", systemImage: "photo.stack") { showsGallery = true }
                 }
             }
-            .sheet(isPresented: $showsGallery) { Gallery(shots: model.shots) }
+            .sheet(isPresented: $showsGallery) {
+                // Keep the viewfinder in sight while browsing on the inner display.
+                Gallery(shots: model.shots)
+                    .presentationDetents([.medium, .large])
+                    .presentationPlacement(.trailing)
+            }
         }
         .onAppear {
             model.camera.start()
@@ -50,14 +62,20 @@ private struct Viewfinder: View {
     @Bindable var model: PeekabooModel
     /// Blows the outer display mirror up for the audience.
     @State private var expanded = CameraService.isSimulated
+    /// Extra top space so the status pill never sits under a camera.
+    @State private var cameraClearance: CGFloat = 0
 
     var body: some View {
         ZStack {
-            if CameraService.isSimulated {
-                SimulatedKid(yaw: model.subjectYaw, happy: model.phase != .attracting)
-            } else {
-                CameraPreview(camera: model.camera)
+            Group {
+                if CameraService.isSimulated {
+                    SimulatedKid(yaw: model.subjectYaw, happy: model.phase != .attracting)
+                } else {
+                    CameraPreview(camera: model.camera)
+                }
             }
+            // Let the picture run under a vertical bar instead of stopping at it.
+            .backgroundExtensionEffect()
 
             if model.faceVisible {
                 LockReticle(phase: model.phase)
@@ -74,7 +92,10 @@ private struct Viewfinder: View {
             }
         }
         .clipped()
-        .overlay(alignment: .top) { statusBar }
+        .overlay(alignment: .top) {
+            statusBar.padding(.top, cameraClearance)
+        }
+        .onCameraOcclusionChange { cameraClearance = $0 }
         .overlay(alignment: .bottomTrailing) { subjectPreview }
         .subjectDisplay(isEnabled: $model.outerEnabled,
                         onAvailabilityChange: { available in model.outerAvailable = available }) {
@@ -89,7 +110,7 @@ private struct Viewfinder: View {
                 .contentTransition(.symbolEffect(.replace))
             Spacer()
             if model.isTabletop {
-                Label("Tabletop", systemImage: "laptopcomputer")
+                Label("Tabletop · hands-free", systemImage: "laptopcomputer")
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
             GazeMeter(value: model.faceVisible ? model.gaze : 0)
