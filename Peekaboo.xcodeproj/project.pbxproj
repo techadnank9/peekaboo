@@ -7,9 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		14447DCCD862C5719B45B459 /* PhotoSaver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EE27055BE031D912F2BF14 /* PhotoSaver.swift */; };
 		340F20FD8559A15EF5B9D375 /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF24F1252F1ED59AE261C88E /* CameraService.swift */; };
+		46A56FA57A1D4660E7F92C3D /* Chimes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DF4B2A4367602E5A3414029 /* Chimes.swift */; };
 		5324380DCBDA0F74EE9CC76B /* PeekabooApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0532F7793D23B05C4897550E /* PeekabooApp.swift */; };
 		60894191D0C10D1E4A370536 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC0BCD06157A43774E7E9CA /* CameraPreview.swift */; };
+		79DB043B83EAC9AC2E16DB5E /* SimulatedKid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3D367745226B24EBA7D646 /* SimulatedKid.swift */; };
 		7EF8EA9EFB8D7277BB354B74 /* DuoSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D14CF591A5B223495D52AAE /* DuoSupport.swift */; };
 		8F788813929C631F193FB05A /* AttractorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0656AD993BABF05FB68ADCAC /* AttractorView.swift */; };
 		AF56A8E1EC3DFF52CBDFF380 /* PeekabooModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A20512C22B99DB2E5DE2415 /* PeekabooModel.swift */; };
@@ -21,10 +24,13 @@
 		0656AD993BABF05FB68ADCAC /* AttractorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttractorView.swift; sourceTree = "<group>"; };
 		0790D6AB3EE298EBD0007D7C /* Peekaboo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Peekaboo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D14CF591A5B223495D52AAE /* DuoSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuoSupport.swift; sourceTree = "<group>"; };
+		3DF4B2A4367602E5A3414029 /* Chimes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chimes.swift; sourceTree = "<group>"; };
 		59E4CD4F5FF2E5465AE302CD /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		95103C0496105C4CAB5431DF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9A20512C22B99DB2E5DE2415 /* PeekabooModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeekabooModel.swift; sourceTree = "<group>"; };
+		9F3D367745226B24EBA7D646 /* SimulatedKid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatedKid.swift; sourceTree = "<group>"; };
 		CBC0BCD06157A43774E7E9CA /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreview.swift; sourceTree = "<group>"; };
+		E7EE27055BE031D912F2BF14 /* PhotoSaver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoSaver.swift; sourceTree = "<group>"; };
 		FF24F1252F1ED59AE261C88E /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -35,11 +41,14 @@
 				0656AD993BABF05FB68ADCAC /* AttractorView.swift */,
 				CBC0BCD06157A43774E7E9CA /* CameraPreview.swift */,
 				FF24F1252F1ED59AE261C88E /* CameraService.swift */,
+				3DF4B2A4367602E5A3414029 /* Chimes.swift */,
 				59E4CD4F5FF2E5465AE302CD /* ContentView.swift */,
 				3D14CF591A5B223495D52AAE /* DuoSupport.swift */,
 				95103C0496105C4CAB5431DF /* Info.plist */,
 				0532F7793D23B05C4897550E /* PeekabooApp.swift */,
 				9A20512C22B99DB2E5DE2415 /* PeekabooModel.swift */,
+				E7EE27055BE031D912F2BF14 /* PhotoSaver.swift */,
+				9F3D367745226B24EBA7D646 /* SimulatedKid.swift */,
 			);
 			path = Peekaboo;
 			sourceTree = "<group>";
@@ -122,10 +131,13 @@
 				8F788813929C631F193FB05A /* AttractorView.swift in Sources */,
 				60894191D0C10D1E4A370536 /* CameraPreview.swift in Sources */,
 				340F20FD8559A15EF5B9D375 /* CameraService.swift in Sources */,
+				46A56FA57A1D4660E7F92C3D /* Chimes.swift in Sources */,
 				D0240385E300459D43B9E207 /* ContentView.swift in Sources */,
 				7EF8EA9EFB8D7277BB354B74 /* DuoSupport.swift in Sources */,
 				5324380DCBDA0F74EE9CC76B /* PeekabooApp.swift in Sources */,
 				AF56A8E1EC3DFF52CBDFF380 /* PeekabooModel.swift in Sources */,
+				14447DCCD862C5719B45B459 /* PhotoSaver.swift in Sources */,
+				79DB043B83EAC9AC2E16DB5E /* SimulatedKid.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

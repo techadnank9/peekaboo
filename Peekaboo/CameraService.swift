@@ -76,7 +76,7 @@ final class CameraService: NSObject, @unchecked Sendable {
     func capturePhoto(attractor: Attractor) {
         if Self.isSimulated {
             Task { @MainActor in
-                let renderer = ImageRenderer(content: SimulatedSubject(attractor: attractor, looking: true)
+                let renderer = ImageRenderer(content: SimulatedKid(yaw: 0, happy: true)
                     .frame(width: 600, height: 800))
                 renderer.scale = 2
                 if let image = renderer.uiImage { onPhoto?(image) }
@@ -121,21 +121,4 @@ extension CameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
 
 private extension CGRect {
     var area: CGFloat { width * height }
-}
-
-/// Stand-in for a live subject in Simulator, which has no camera.
-struct SimulatedSubject: View {
-    let attractor: Attractor
-    let looking: Bool
-
-    var body: some View {
-        ZStack {
-            LinearGradient(colors: [attractor.tint.opacity(0.35), .indigo.opacity(0.5)],
-                           startPoint: .top, endPoint: .bottom)
-            Image(systemName: looking ? "face.smiling.inverse" : "face.dashed")
-                .font(.system(size: 160))
-                .foregroundStyle(.white.opacity(0.9))
-                .rotation3DEffect(.degrees(looking ? 0 : 40), axis: (0, 1, 0))
-        }
-    }
 }

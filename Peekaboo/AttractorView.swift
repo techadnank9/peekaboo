@@ -155,8 +155,43 @@ private struct WigglePuppy: View {
     }
 }
 
+/// Confetti bursting from the top edge, where the lens is.
+private struct Confetti: View {
+    @State private var start = Date()
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            Canvas { gc, size in
+                let t = context.date.timeIntervalSince(start)
+                let colors: [Color] = [.yellow, .white, .pink, .mint, .orange, .cyan]
+                for i in 0..<70 {
+                    let seed = Double(i) * 12.9898
+                    let angle = (sin(seed) * 0.5 + 0.5) * .pi * 0.8 + .pi * 0.1
+                    let speed = 260 + (cos(seed * 1.7) * 0.5 + 0.5) * 380
+                    let x = size.width / 2 + cos(angle) * speed * t * (i.isMultiple(of: 2) ? 1 : -1)
+                    let y = 20 + sin(angle) * speed * t + 420 * t * t
+                    guard y < size.height + 20 else { continue }
+                    var piece = gc
+                    piece.translateBy(x: x, y: y)
+                    piece.rotate(by: .radians(t * 8 + seed))
+                    piece.fill(Path(CGRect(x: -5, y: -3, width: 10, height: 6)),
+                               with: .color(colors[i % colors.count]))
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 private struct CelebrationView: View {
     var body: some View {
+        ZStack {
+            Confetti()
+            cheer
+        }
+    }
+
+    private var cheer: some View {
         VStack(spacing: 18) {
             Image(systemName: "hands.and.sparkles.fill")
                 .font(.system(size: 120))

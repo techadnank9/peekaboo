@@ -58,10 +58,13 @@ final class PeekabooModel {
     var attractor: Attractor = .peekaboo
     var phase: StagePhase = .attracting
     var autoSnap = true
+    var soundOn = true
     var outerEnabled = true
     /// Set by the system through the accessory's availability callback.
     var outerAvailable = false
     var shots: [Shot] = []
+    /// The photo that just landed, shown briefly over the viewfinder.
+    var justCaptured: Shot?
     /// How squarely the subject faces the lens, 0...1, from Vision.
     var gaze: Double = 0
     var faceVisible = false
@@ -102,35 +105,103 @@ final class PeekabooModel {
 
     func snap() {
         lockedSince = nil
-        cooldownUntil = Date().addingTimeInterval(2.5)
+        cooldownUntil = Date().addingTimeInterval(3.2)
         camera.capturePhoto(attractor: attractor)
     }
 
     private func photoArrived(_ image: UIImage) {
+        let shot = Shot(image: image)
         withAnimation(.snappy) {
-            shots.insert(Shot(image: image), at: 0)
+            shots.insert(shot, at: 0)
+            justCaptured = shot
             phase = .celebrating
         }
+        if soundOn { Chimes.shared.celebrate() }
+        PhotoSaver.save(image)
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.8))
+            try? await Task.sleep(for: .seconds(1.1))
+            withAnimation(.smooth(duration: 0.5)) { justCaptured = nil }
+            try? await Task.sleep(for: .seconds(1.0))
             withAnimation(.smooth) { phase = .attracting }
+            subjectAttention = false
+            if demoRunning {
+                nextAttractor()
+                scheduleNextGlance(after: 2.6)
+            }
         }
     }
 
-    /// Simulator has no camera: play the same glance the Vision pipeline
-    /// would report, so the whole loop runs on stage.
-    func simulateGlance() {
-        Task { @MainActor in
-            for step in 0..<5 {
-                faceChanged(visible: true, gaze: 0.5 + Double(step) * 0.12)
-                try? await Task.sleep(for: .milliseconds(120))
+    // MARK: Simulator subject
+
+    /// Head turn of the simulated kid: 0 faces the lens.
+    var subjectYaw: Double = 0.7
+    /// Whether the attractor has caught the simulated kid's eye.
+    var subjectAttention = false
+    /// Runs the stage loop: look away, get caught, snap, celebrate, repeat.
+    var demoRunning = false
+    private var subjectTask: Task<Void, Never>?
+
+    /// Simulator has no camera. Drive a cartoon kid through the same face
+    /// pipeline Vision feeds on device, so the whole loop runs on stage.
+    func startSimulatedSubject() {
+        guard CameraService.isSimulated, subjectTask == nil else { return }
+        subjectTask = Task { @MainActor [weak self] in
+            var wander = 0.7
+            var tick = 0
+            while !Task.isCancelled, let self {
+                tick += 1
+                if tick % 14 == 0 {
+                    // Toddlers look everywhere except the camera.
+                    wander = (Bool.random() ? 1 : -1) * Double.random(in: 0.45...0.95)
+                }
+                let target = subjectAttention ? 0 : wander
+                subjectYaw += (target - subjectYaw) * (subjectAttention ? 0.3 : 0.12)
+                faceChanged(visible: true, gaze: max(0, 1 - abs(subjectYaw) / 0.45))
+                try? await Task.sleep(for: .milliseconds(90))
             }
+        }
+    }
+
+    /// One glance: the attractor catches the kid's eye.
+    func simulateGlance() {
+        withAnimation(.smooth) { subjectAttention = true }
+    }
+
+    func toggleDemo() {
+        demoRunning.toggle()
+        if demoRunning { scheduleNextGlance(after: 1.5) }
+    }
+
+    private func scheduleNextGlance(after seconds: Double) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(seconds))
+            guard demoRunning, phase != .celebrating else { return }
+            simulateGlance()
         }
     }
 
     func nextAttractor() {
         let all = Attractor.allCases
         let i = all.firstIndex(of: attractor) ?? 0
-        withAnimation(.bouncy) { attractor = all[(i + 1) % all.count] }
+        select(all[(i + 1) % all.count])
+    }
+
+    func select(_ attractor: Attractor) {
+        withAnimation(.bouncy) { self.attractor = attractor }
+        if soundOn { Chimes.shared.play(attractor) }
+    }
+
+    private var callTask: Task<Void, Never>?
+
+    /// Repeats the attractor's call every few seconds while waiting for a look.
+    func startCalling() {
+        guard callTask == nil else { return }
+        callTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(4))
+                guard let self else { return }
+                if soundOn, outerEnabled, phase == .attracting { Chimes.shared.play(attractor) }
+            }
+        }
     }
 }
