@@ -49,7 +49,7 @@ struct ContentView: View {
 private struct Viewfinder: View {
     @Bindable var model: PeekabooModel
     /// Blows the outer display mirror up for the audience.
-    @State private var expanded = false
+    @State private var expanded = CameraService.isSimulated
 
     var body: some View {
         ZStack {
@@ -121,7 +121,7 @@ private struct Viewfinder: View {
     /// A live miniature of the outer display, so the photographer knows what
     /// the subject is seeing. Tap to turn the outer display on or off.
     private var subjectPreview: some View {
-        let scale: CGFloat = expanded ? 0.62 : 0.3
+        let scale: CGFloat = expanded ? 0.42 : 0.26
         return VStack(alignment: .trailing, spacing: 6) {
             AttractorView(model: model)
                 .frame(width: 390, height: 640)
