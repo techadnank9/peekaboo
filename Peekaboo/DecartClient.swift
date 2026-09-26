@@ -10,11 +10,9 @@ enum DecartClient {
 
     static var isAvailable: Bool { !(apiKey ?? "").isEmpty }
 
-    static func cartoonize(_ image: UIImage, as character: Attractor) async throws -> UIImage {
+    static func cartoonize(_ image: UIImage, prompt: String) async throws -> UIImage {
         guard let apiKey, !apiKey.isEmpty else { throw URLError(.userAuthenticationRequired) }
 
-        let prompt = "Turn this child into a cute Pixar-style 3D cartoon character, same pose and expression, "
-            + "big sparkling eyes, playing with a friendly \(character.title), bright colorful background"
         let boundary = "peekaboo-\(UUID().uuidString)"
         var body = Data()
         func field(_ name: String, _ value: String) {

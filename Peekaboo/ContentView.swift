@@ -261,6 +261,7 @@ private struct GazeMeter: View {
 
 private struct ControlDeck: View {
     @Bindable var model: PeekabooModel
+    @State private var showsStudio = false
 
     var body: some View {
         VStack(spacing: 18) {
@@ -283,10 +284,16 @@ private struct ControlDeck: View {
                 .toggleStyle(.button)
 
                 if DecartClient.isAvailable {
-                    Toggle(isOn: $model.cartoonMe) {
-                        Label("Cartoon Me", systemImage: "wand.and.sparkles")
+                    Button("Cartoon Studio", systemImage: model.cartoonMe ? "wand.and.sparkles" : "wand.and.rays.inverse") {
+                        showsStudio = true
                     }
-                    .toggleStyle(.button)
+                    .buttonStyle(.bordered)
+                    .tint(model.cartoonMe ? .yellow : .white)
+                    .sheet(isPresented: $showsStudio) {
+                        CartoonStudio(model: model)
+                            .presentationDetents([.medium, .large])
+                            .presentationPlacement(.trailing)
+                    }
                 }
 
                 Toggle(isOn: $model.soundOn) {

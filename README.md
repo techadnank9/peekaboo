@@ -60,6 +60,7 @@ Half-fold the phone and stand it on a table, and it becomes a **hands-free table
 - 👁️ **Look-to-shoot.** Vision's face yaw and pitch give a 0–1 gaze score; 0.2 s of eye contact above 0.8 fires the shutter, then a cooldown stops double shots.
 - 🎉 **Reward loop.** Confetti from the lens edge plus the kid's own photo as a bouncing print, with a fanfare.
 - 🪄 **Cartoon Me.** Each shot is turned into a Pixar-style cartoon of the kid by [Decart](https://decart.ai)'s Lucy image model. Moments later the outer display reveals **"Cartoon you!"**, and the parent gets both versions in the gallery. It's opt-in with its own switch, as the only feature that uses the network.
+- 🎨 **Cartoon Studio.** The parent directs the cartoon: pick a **style** (Pixar 3D, anime, superhero, astronaut, fairy tale, claymation, dino rider), a **pose** (as taken, waving, flying, dancing, jumping, hugging the character) and add **their own prompt** ("wearing a birthday hat", "with our cat"). A live preview shows the exact instruction sent to Decart.
 - 🎵 **A jingle for each character.** A tiny built-in synth (`AVAudioEngine`): *pi-ka-chu*, *ba-na-na*, *pee-ka-BOO*, *woof woof*. It repeats every 4 s while waiting for a look.
 - 👆 **The kid can shoot too.** Tapping the outer display takes the photo.
 - 🪞 **"What the kid sees" mirror.** A live miniature of the outer display on the parent's screen. Tap to enlarge, long-press to turn the outer display off.
@@ -149,6 +150,7 @@ Peekaboo/
 ├── DuoSupport.swift         iPhone Duo wrappers: arrangement, outer display, fold and occlusion regions
 ├── SimulatedKid.swift       Cartoon toddler for Simulator demos
 ├── DecartClient.swift       Cartoon Me: Lucy Image 2 request
+├── CartoonStudio.swift      Style, pose and custom prompt for Cartoon Me
 ├── Chimes.swift             AVAudioEngine jingle synth
 └── PhotoSaver.swift         Add-only Photos saving
 ```
