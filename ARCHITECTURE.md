@@ -4,9 +4,9 @@ Bitrig Hacks: iPhone Duo Edition.
 
 ## 1. Summary
 
-Peekaboo is a camera for photographing kids and pets, who rarely look at the lens. On iPhone Duo the outer display sits on the back, facing the same way as the rear camera, so Peekaboo plays an animated **attractor** there, just under the lens. The photographer still sees the full viewfinder on the inner display, with a live mirror of what the kid sees. Vision reads the subject's face yaw and pitch. When they look straight at the lens for 0.2 s, the shutter fires on its own: the viewfinder flashes, the photo drops in as a print, and it is saved to the photo library. Meanwhile the outer display bursts confetti from the lens and shows "You did it!" as a reward. When the phone is half folded on a table (tabletop pose), the app splits across the fold: viewfinder on top, control deck below, so it works hands-free. In Simulator, a cartoon kid run by a demo director goes through the same pipeline, so the full loop runs live on stage.
+Peekaboo is a camera for photographing kids and pets, who rarely look at the lens. On iPhone Duo the outer display sits on the back, facing the same way as the rear camera, so Peekaboo plays an animated **attractor** there, just under the lens. The photographer still sees the full viewfinder on the inner display, with a live mirror of what the kid sees. Vision reads the subject's face yaw and pitch. When they look straight at the lens for 0.2 s, the shutter fires on its own: the viewfinder flashes, the photo drops in as a print, and it is saved to the photo library. Meanwhile the outer display bursts confetti from the lens and shows "You did it!" as a reward. When the phone is half folded on a table (tabletop pose), the app splits across the fold (viewfinder on top, control deck below) and forces auto-snap on, so it works hands-free. In Simulator, a cartoon kid run by a demo director goes through the same pipeline, so the full loop runs live on stage. The app is **iPhone Duo only**: the deployment target is iOS 27.1.
 
-**Why only iPhone Duo:** a regular iPhone has no screen facing the subject, which leaves nothing to draw their eyes to the lens and no way to reward them. Duo adds a subject-facing display (`CameraCaptureAccessory`), a physical fold that splits the layout (`ArrangementView`, `reservedRegions(kind: .division)`), and cameras whose direction changes with the pose (`AVCaptureDeviceDirectionCoordinator`). Peekaboo relies on all three.
+**Why only iPhone Duo:** a regular iPhone has no screen facing the subject, which leaves nothing to draw their eyes to the lens and no way to reward them. Duo adds a subject-facing display (`CameraCaptureAccessory`), a physical fold that splits the layout (`ArrangementView`, `reservedRegions(kind: .division)`), and cameras whose direction changes with the pose (`AVCaptureDeviceDirectionCoordinator`). Peekaboo relies on all three, plus Duo's vertical toolbars and camera occlusion regions.
 
 ## 2. Architecture
 
@@ -15,11 +15,12 @@ flowchart TB
     App[PeekabooApp<br/>WindowGroup, @State model] --> CV
 
     subgraph Inner["Inner display: capture UI"]
-        CV[ContentView<br/>NavigationStack, toolbar, Run Demo, Gallery sheet]
+        CV[ContentView<br/>NavigationStack, pinned toolbar, Run Demo,<br/>trailing Gallery sheet]
         CV --> DA[DuoArrangement<br/>ArrangementView .split / fallback stacks]
-        DA --> VF[Viewfinder<br/>LockReticle, ShutterFlash, CaptureCard,<br/>status bar, GazeMeter, outer-display mirror]
+        DA --> VF[Viewfinder<br/>backgroundExtensionEffect, LockReticle, ShutterFlash,<br/>CaptureCard, status pill, GazeMeter, outer-display mirror]
         DA --> CD[ControlDeck<br/>AttractorChip, ShutterButton, Glance, RecentShots]
         CV -. onFoldChange .-> Fold[Fold detection<br/>reservedRegions kind: .division]
+        VF -. onCameraOcclusionChange .-> Occ[Camera occlusion<br/>reservedRegions kind: .occlusion]
         VF --> CP[CameraPreview<br/>PreviewView + AVCaptureVideoPreviewLayer]
         VF --> SK[SimulatedKid<br/>Simulator only]
     end
@@ -32,7 +33,8 @@ flowchart TB
 
     M[(PeekabooModel<br/>@Observable shared state<br/>phase, attractor, gaze, shots, justCaptured,<br/>isTabletop, subjectYaw, demoRunning)]
     CV & VF & CD & AV <--> M
-    Fold -- isTabletop --> M
+    Fold -- "isTabletop, autoSnap = true" --> M
+    M -- play / celebrate --> CH[Chimes<br/>AVAudioEngine jingles]
     M -- save --> PS[PhotoSaver<br/>PHPhotoLibrary .addOnly]
 
     subgraph Cam["CameraService"]
@@ -59,12 +61,12 @@ Both displays read the same `PeekabooModel` instance, so no messages are passed 
 | `PeekabooModel.swift` | `@Observable` shared state: `Attractor`, `StagePhase` (attracting / locked / celebrating), `Shot`. Runs the capture state machine (`faceChanged`, `snap`, 3.2 s cooldown, `photoArrived` → `justCaptured` + `PhotoSaver.save`). Holds the Simulator **demo director**: `startSimulatedSubject` (a 90 ms loop that moves `subjectYaw` and calls `faceChanged`), `simulateGlance`, `toggleDemo`, `scheduleNextGlance`, `nextAttractor`. |
 | `CameraService.swift` | `AVCaptureSession` with a photo output and a video data output. Runs Vision at about 10 fps to compute the gaze score, swaps the camera input via `selectCamera(uniqueID:)`, and in Simulator renders `SimulatedKid` as the "photo". |
 | `CameraPreview.swift` | `CameraPreview` (UIViewRepresentable over `PreviewView`) and `SubjectCameraTracker`, which wraps `AVCaptureDeviceDirectionCoordinator` and follows the camera that faces the subject. |
-| `DuoSupport.swift` | Duo API wrappers with fallbacks: `DuoArrangement` (ArrangementView), `.subjectDisplay(...)` (sceneAccessory + CameraCaptureAccessory), `.onFoldChange` (reserved division region). |
-| `ContentView.swift` | Inner UI: `ContentView` (toolbar with Next Attractor, **Run/Stop Demo** in Simulator, Photos), `Viewfinder`, `LockReticle` (brackets close in and turn green on lock), `ShutterFlash`, `CaptureCard` (the new photo shown as a print), the outer-display mirror (tap to enlarge it for the audience, long press to turn the outer display on or off), `GazeMeter`, `ControlDeck`, `AttractorChip`, `ShutterButton`, `RecentShots`, `Gallery`. |
+| `DuoSupport.swift` | Duo API wrappers: `DuoArrangement` (ArrangementView), `.subjectDisplay(...)` (sceneAccessory + CameraCaptureAccessory), `.onFoldChange` (reserved division region), `.onCameraOcclusionChange` (active occlusion regions near the top edge → clearance in points). |
+| `ContentView.swift` | Inner UI: `ContentView` (toolbar: Next Attractor pinned trailing, **Run/Stop Demo** in Simulator, Photos as a secondary action; forces `autoSnap` on in tabletop; Gallery sheet on the trailing side), `Viewfinder` (picture extends under a vertical bar, status pill pushed below any active camera), `LockReticle` (brackets close in and turn green on lock), `ShutterFlash`, `CaptureCard` (the new photo shown as a print), the outer-display mirror (tap to enlarge it for the audience, long press to turn the outer display on or off), `GazeMeter`, `ControlDeck`, `AttractorChip`, `ShutterButton`, `RecentShots`, `Gallery`. |
 | `AttractorView.swift` | Outer display content: `LensBeacon` (chevrons pointing at the lens), four attractors (`PeekabooFace`, `BubbleField`, `Starburst`, `WigglePuppy`), and `CelebrationView` with `Confetti` bursting from the lens edge. Tapping it takes the shot. |
 | `SimulatedKid.swift` | Cartoon toddler in a room, used in Simulator. `yaw` turns the head (0 means facing the lens), and `happy` switches to a grin. |
 | `PhotoSaver.swift` | Saves each shot to the photo library, asking for add-only access. |
-| `Chimes.swift` | Small `AVAudioEngine` synth: a jingle per attractor, repeated every 4 s while waiting for a look, and a fanfare on each shot. |
+| `Chimes.swift` | Small `AVAudioEngine` synth: a jingle per attractor, repeated every 4 s while attracting (`startCalling`), and a fanfare on capture. Toggled by `soundOn` (Sound button). |
 
 ## 4. Flows
 
@@ -95,7 +97,7 @@ stateDiagram-v2
 flowchart LR
     Closed["Closed<br/>App runs on the outer display<br/>no accessory, plain camera UI"]
     Open["Fully open<br/>Capture UI on the inner display<br/>outer display shows AttractorView<br/>(CameraCaptureAccessory, system decides)"]
-    Half["Half open, tabletop<br/>division region active → isTabletop = true<br/>ArrangementView .split: Viewfinder top, ControlDeck bottom<br/>outer display still shows AttractorView"]
+    Half["Half open, tabletop<br/>division region active → isTabletop = true, autoSnap = true<br/>status: Tabletop · hands-free<br/>ArrangementView .split: Viewfinder top, ControlDeck bottom<br/>outer display still shows AttractorView"]
     Closed -- open --> Open
     Open -- close --> Closed
     Open -- fold to ~90° --> Half
@@ -148,30 +150,36 @@ The cartoon kid feeds the same `faceChanged()` path as Vision, so the demo exerc
 
 ## 5. iPhone Duo APIs
 
-All are guarded by `#if compiler(>=6.4)` and `#available(iOS 27.1, *)`, each with a plain fallback.
+The app targets iOS 27.1, so these always run. The `#if compiler(>=6.4)` / `#available(iOS 27.1, *)` guards and fallbacks in `DuoSupport.swift` / `CameraPreview.swift` remain only as compile guards.
 
 | API | Where | What it does for the user |
 |---|---|---|
-| `.sceneAccessory { CameraCaptureAccessory(isEnabled:) { … }.onAvailabilityChange }` | `DuoSupport.swift` `subjectDisplay`, used in `Viewfinder` | Shows the attractor and the celebration to the kid on the outer display while the photographer frames the shot inside. Fallback: none shown. |
-| `ArrangementView { } secondary: { }` + `.arrangementViewStyle(.split)` | `DuoSupport.swift` `DuoArrangement` | Puts the viewfinder on one side of the fold and the controls on the other. Fallback: `ViewThatFits` HStack/VStack. |
-| `GeometryProxy.reservedRegions(kind: .division)` (`isActive`, `frame`) | `DuoSupport.swift` `onFoldChange` | Detects the half-open tabletop pose and shows the "Tabletop" badge. Fallback: never divided. |
-| `AVCaptureDeviceDirectionCoordinator(view:deviceTypes:)` + `backwardFacingDeviceDescriptors` | `CameraPreview.swift` `SubjectCameraTracker` | Always shoots from the camera facing the subject, whatever the fold state or rotation. Fallback: back wide camera. |
+| `.sceneAccessory { CameraCaptureAccessory(isEnabled:) { … }.onAvailabilityChange }` | `DuoSupport.swift` `subjectDisplay`, used in `Viewfinder` | Shows the attractor and the celebration to the kid on the outer display while the photographer frames the shot inside. |
+| `ArrangementView { } secondary: { }` + `.arrangementViewStyle(.split)` | `DuoSupport.swift` `DuoArrangement` | Puts the viewfinder on one side of the fold and the controls on the other. |
+| `GeometryProxy.reservedRegions(kind: .division)` (`isActive`, `frame`) | `DuoSupport.swift` `onFoldChange` | Detects the half-open tabletop pose and shows "Tabletop · hands-free" and forces auto-snap on. |
+| `AVCaptureDeviceDirectionCoordinator(view:deviceTypes:)` + `backwardFacingDeviceDescriptors` | `CameraPreview.swift` `SubjectCameraTracker` | Always shoots from the camera facing the subject, whatever the fold state or rotation. |
+| `reservedRegions(kind: .occlusion)` | `DuoSupport.swift` `onCameraOcclusionChange`, used in `Viewfinder` | Pushes the status pill below an active camera so it never sits under the lens. |
+| `ToolbarItemPlacement.topBarPinnedTrailing` + `.visibilityPriority(.high)` | `ContentView` toolbar (Next Attractor; Run Demo uses `.primaryAction` + `.visibilityPriority(.high)`) | Keeps the key actions visible when Duo stands the bars vertically. Photos is `.secondaryAction`, so it moves to the overflow menu. |
+| `.backgroundExtensionEffect()` | `Viewfinder` camera / `SimulatedKid` layer | The picture continues under a vertical bar instead of stopping at its edge. |
+| `.presentationPlacement(.trailing)` + `.presentationDetents([.medium, .large])` | Gallery sheet in `ContentView` | Photos open beside the viewfinder on the wide inner display, so the shot stays in view. |
 | Device types `.builtInOuterUltraWideCamera`, `.builtInInnerUltraWideCamera` | `SubjectCameraTracker` | Includes the Duo-specific cameras when choosing the subject-facing one. |
 
-Not Duo-specific: Vision `VNDetectFaceRectanglesRequest` revision 3 (yaw/pitch), `AVCapturePhotoOutput`, `PHPhotoLibrary`, and `glassEffect` for the status capsule.
+Not Duo-specific: Vision `VNDetectFaceRectanglesRequest` revision 3 (yaw/pitch), `AVCapturePhotoOutput`, `PHPhotoLibrary`, and `AVAudioEngine` (Chimes).
 
 ## 6. Build and run
 
 ```sh
 cd peekaboo-duo
+export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
 xcodegen generate            # project.yml → Peekaboo.xcodeproj
-open Peekaboo.xcodeproj      # build and run scheme "Peekaboo"
+xcodebuild -scheme Peekaboo -destination 'platform=iOS Simulator,name=<iPhone Duo simulator>' build
+# or: open Peekaboo.xcodeproj and run scheme "Peekaboo"
 ```
 
-- **Duo features:** Xcode 27.1 beta (iOS 27.1 SDK, Swift compiler 6.4 or later), on an iPhone Duo simulator or device.
-- **Xcode 26:** builds with the fallbacks (single display, stacked layout, back wide camera). The deployment target is iOS 26.0.
+- **Required:** Xcode 27.1 beta (iOS 27.1 SDK, Swift 6.4 compiler). The app is iPhone Duo only, with a deployment target of iOS 27.1. Run it on an iPhone Duo simulator or device.
+- **Xcode 26:** not supported. The fallbacks remain only as compile guards.
 - **Simulator:** there is no camera. `SimulatedKid` stands in for the subject. Use **Run Demo** in the toolbar for the automatic loop, or **Glance** for a single look.
-- **Device:** asks for camera access and add-only photo library access. Shots are saved to Photos and also shown in RecentShots and the Gallery sheet.
+- **Device:** asks for camera access and add-only photo library access. Shots are saved to Photos and also shown in RecentShots and the Gallery sheet, which opens on the trailing side.
 
 ## 7. 60-second demo script
 
@@ -183,5 +191,5 @@ open Peekaboo.xcodeproj      # build and run scheme "Peekaboo"
 | 0:25 | Tap **Run Demo** in Simulator, or switch the attractor to Puppy on a device. | "Puppy, bubbles, sparkles: whatever works on your kid or your dog." |
 | 0:30 | The kid turns to the lens and grins. The gaze meter and brackets turn green, the shutter fills green. | "Vision reads where their face points. The moment they look at the lens..." |
 | 0:36 | Flash, the print drops in, and the mirror shows confetti and "You did it!". | "...it takes the photo, saves it, and the back display throws confetti for them." |
-| 0:42 | The demo loops with the next attractor. Fold to about 90° and stand it on the table: "Tabletop" badge, split layout. | "Stand it on the table: viewfinder on top, controls below the fold, no hands needed." |
-| 0:52 | Point at RecentShots filling up. | "Peekaboo: the only camera that makes kids look at it, and only on iPhone Duo." |
+| 0:42 | The demo loops with the next attractor. Fold to about 90° and stand it on the table: "Tabletop · hands-free", split layout, auto-snap forced on. | "Stand it on the table: viewfinder on top, controls below the fold, and it shoots on a look. No hands needed." |
+| 0:52 | Point at RecentShots filling up, or open Photos (the Gallery slides in beside the viewfinder). | "Peekaboo: the only camera that makes kids look at it, and only on iPhone Duo." |
