@@ -1,4 +1,5 @@
-build/
 *.xcodeproj/xcuserdata/
 DerivedData/
+build*/
+build/
 build27/
