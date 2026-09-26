@@ -13,7 +13,9 @@ struct AttractorView: View {
             background
             switch model.phase {
             case .celebrating:
-                CelebrationView(photo: model.shots.first?.image)
+                CelebrationView(photo: model.revealingCartoon ? model.shots.first?.cartoon : model.shots.first?.image,
+                                title: model.revealingCartoon ? "Cartoon you!" : "That's you!")
+                    .id(model.revealingCartoon)
                     .transition(.scale.combined(with: .opacity))
             case .attracting, .locked:
                 attractor
@@ -113,6 +115,7 @@ private struct Confetti: View {
 /// both ways, from the photographer to the kid and back.
 private struct CelebrationView: View {
     let photo: UIImage?
+    var title = "That's you!"
     @State private var landed = false
 
     var body: some View {
@@ -136,7 +139,7 @@ private struct CelebrationView: View {
                         .font(.system(size: 120))
                         .symbolEffect(.bounce, options: .repeat(3))
                 }
-                Text(photo == nil ? "You did it!" : "That's you!")
+                Text(photo == nil ? "You did it!" : title)
                     .font(.system(.largeTitle, design: .rounded, weight: .black))
             }
             .foregroundStyle(.white)

@@ -11,7 +11,7 @@ The outer display sits right beside the camera, facing your kid. Peekaboo puts a
 [![iOS](https://img.shields.io/badge/iOS-27.1-blue)](#build-and-run)
 [![Swift](https://img.shields.io/badge/Swift-6.4-orange?logo=swift)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF)](#architecture)
-[![On-device](https://img.shields.io/badge/privacy-100%25%20on--device-success)](#privacy)
+[![On-device](https://img.shields.io/badge/privacy-on--device%20first-success)](#privacy)
 [![Built at Bitrig Hacks](https://img.shields.io/badge/built%20at-Bitrig%20Hacks%20%C2%B7%20YC-FF6600)](https://bitrig.com)
 
 </div>
@@ -33,7 +33,7 @@ iPhone Duo has a display on the outside, **facing the same way as the rear camer
 1. **Attract.** A full-screen cartoon character (Pikachu, a Minion, Mickey, a peekaboo bear…) plays on the outer display, with a jingle, right under the lens.
 2. **Follow.** On-device Vision tracks where the kid is looking. If they look away to the left, the character **runs to the left** to catch their eye, then **bounds up toward the lens**, and the kid's eyes follow it.
 3. **Snap.** The moment the kid's face points straight at the lens, the shutter fires by itself. No "look here, sweetie!" needed.
-4. **Reward.** The outer display bursts into confetti and shows the kid **their own photo: "That's you!"** Kids love it, so they look again.
+4. **Reward.** The outer display bursts into confetti and shows the kid **their own photo: "That's you!"** Moments later, **"Cartoon you!"**: the same shot redrawn as a 3D cartoon by Decart. Kids love it, so they look again.
 
 Half-fold the phone and stand it on a table, and it becomes a **hands-free tabletop camera**: the viewfinder on the top half, the controls on the bottom, auto-shutter on. The parent gets down on the floor and plays; Peekaboo takes the pictures.
 
@@ -59,6 +59,7 @@ Half-fold the phone and stand it on a table, and it becomes a **hands-free table
 - 🧭 **Gaze-chasing.** Characters move toward the side the kid is looking at, then lead their eyes up to the lens.
 - 👁️ **Look-to-shoot.** Vision's face yaw and pitch give a 0–1 gaze score; 0.2 s of eye contact above 0.8 fires the shutter, then a cooldown stops double shots.
 - 🎉 **Reward loop.** Confetti from the lens edge plus the kid's own photo as a bouncing print, with a fanfare.
+- 🪄 **Cartoon Me.** Each shot is turned into a Pixar-style cartoon of the kid by [Decart](https://decart.ai)'s Lucy image model. Moments later the outer display reveals **"Cartoon you!"**, and the parent gets both versions in the gallery. It's opt-in with its own switch, as the only feature that uses the network.
 - 🎵 **A jingle for each character.** A tiny built-in synth (`AVAudioEngine`): *pi-ka-chu*, *ba-na-na*, *pee-ka-BOO*, *woof woof*. It repeats every 4 s while waiting for a look.
 - 👆 **The kid can shoot too.** Tapping the outer display takes the photo.
 - 🪞 **"What the kid sees" mirror.** A live miniature of the outer display on the parent's screen. Tap to enlarge, long-press to turn the outer display off.
@@ -103,25 +104,29 @@ Viewfinder(model: model)
 
 ```mermaid
 flowchart LR
-    subgraph Inner["Inner display · parent"]
-        CV[ContentView] --> DA[DuoArrangement<br/>ArrangementView]
-        DA --> VF[Viewfinder]
-        DA --> CD[ControlDeck]
+    subgraph Inner["Inner display (parent)"]
+        CV["ContentView"] --> DA["DuoArrangement / ArrangementView"]
+        DA --> VF["Viewfinder"]
+        DA --> CD["ControlDeck"]
     end
-    subgraph Outer["Outer display · kid"]
-        AV[AttractorView] --> LS[LureStage + Lottie characters]
-        AV --> PC[Pip / Twinkle / Bubbles]
-        AV --> CEL[Celebration · That's you!]
+    subgraph Outer["Outer display (kid)"]
+        AV["AttractorView"] --> LS["LureStage and Lottie characters"]
+        AV --> PC["Pip, Twinkle, Bubbles"]
+        AV --> CEL["Celebration: That is you"]
     end
-    M[(PeekabooModel<br/>@Observable)]
-    CS[CameraService<br/>AVCaptureSession]
-    V[Vision<br/>face yaw/pitch]
-    DIR[AVCaptureDeviceDirectionCoordinator]
-    VF -- sceneAccessory --> AV
-    CS --> V -- gaze + side --> M
-    M --> VF & CD & AV
-    DIR -- subject-facing camera --> CS
-    M -- snap --> CS -- photo --> M
+    M[("PeekabooModel (Observable)")]
+    CS["CameraService (AVCaptureSession)"]
+    V["Vision face yaw and pitch"]
+    DIR["AVCaptureDeviceDirectionCoordinator"]
+    VF -- "sceneAccessory" --> AV
+    CS --> V
+    V -- "gaze and side" --> M
+    M --> VF
+    M --> CD
+    M --> AV
+    DIR -- "subject-facing camera" --> CS
+    M -- "snap" --> CS
+    CS -- "photo" --> M
 ```
 
 **The capture loop** is a small state machine: `attracting → locked → celebrating → attracting`, with a 3.2 s cooldown so one look gives one photo.
@@ -143,6 +148,7 @@ Peekaboo/
 ├── CameraPreview.swift      Preview layer + AVCaptureDeviceDirectionCoordinator
 ├── DuoSupport.swift         iPhone Duo wrappers: arrangement, outer display, fold and occlusion regions
 ├── SimulatedKid.swift       Cartoon toddler for Simulator demos
+├── DecartClient.swift       Cartoon Me: Lucy Image 2 request
 ├── Chimes.swift             AVAudioEngine jingle synth
 └── PhotoSaver.swift         Add-only Photos saving
 ```
@@ -171,6 +177,8 @@ DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
 
 Swift Package Manager fetches [Lottie](https://github.com/airbnb/lottie-spm) automatically.
 
+**Optional, Cartoon Me:** put a [Decart API key](https://platform.decart.ai) in `Peekaboo/DecartKey.txt` (git-ignored) and run `xcodegen generate` again. Without it, the switch stays hidden and everything runs on the device.
+
 ### Demo it in the Simulator
 
 The Simulator has no camera, so Peekaboo swaps in a cartoon toddler who looks everywhere except the lens:
@@ -186,10 +194,11 @@ The Simulator has no camera, so Peekaboo swaps in a cartoon toddler who looks ev
 
 ## Privacy
 
-- **Everything runs on the device.** Face tracking uses Apple's Vision framework; no frames or photos leave the phone.
+- **Everything runs on the device by default.** Face tracking uses Apple's Vision framework; no frames leave the phone.
+- **Cartoon Me is the one exception, and it's opt-in.** When it's on, only the finished photo is uploaded to Decart to make the cartoon. There's no live video and no key in the repo.
 - Peekaboo only looks at **face orientation** (yaw and pitch), never identity.
 - Photos are saved with **add-only** access to the photo library.
-- No accounts, no analytics, no network calls.
+- No accounts, no analytics.
 
 ---
 
@@ -201,6 +210,7 @@ The Simulator has no camera, so Peekaboo swaps in a cartoon toddler who looks ev
 - [ ] Video mode: the character keeps a toddler's attention through a whole clip
 - [ ] Custom characters: bring your own Lottie
 - [ ] Shared album: grandparents get the photo instantly
+- [ ] Live cartoon mirror: the kid sees themselves as a cartoon in real time on the outer display (Decart realtime)
 
 ---
 
@@ -209,6 +219,7 @@ The Simulator has no camera, so Peekaboo swaps in a cartoon toddler who looks ev
 - Built in one afternoon at **Bitrig Hacks: iPhone Duo Edition** (YC office, San Francisco, September 26, 2026), with [Bitrig](https://bitrig.com) and Xcode 27.1 beta.
 - Character animations come from creators on [LottieFiles](https://lottiefiles.com) under the Lottie Simple License. Pikachu, the Minions, Mickey Mouse and other characters are trademarks of their respective owners; this is a non-commercial hackathon demo with no affiliation or endorsement.
 - Animation playback by [Lottie for iOS](https://github.com/airbnb/lottie-ios) (Airbnb).
+- Cartoon Me by [Decart](https://decart.ai) (Lucy Image 2).
 
 ## License
 

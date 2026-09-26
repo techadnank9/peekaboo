@@ -76,6 +76,8 @@ struct Shot: Identifiable {
     let id = UUID()
     let image: UIImage
     let date = Date()
+    /// The kid as a cartoon, from Cartoon Me.
+    var cartoon: UIImage?
 }
 
 /// State shared by the capture interface on the inner display and the
@@ -87,6 +89,11 @@ final class PeekabooModel {
     var phase: StagePhase = .attracting
     var autoSnap = true
     var soundOn = true
+    /// Sends each shot to Decart and reveals the kid as a cartoon. The one
+    /// feature that uses the network, so it has its own switch.
+    var cartoonMe = DecartClient.isAvailable
+    /// The outer display is showing the cartoon version of the last shot.
+    var revealingCartoon = false
     var outerEnabled = true
     /// Set by the system through the accessory's availability callback.
     var outerAvailable = false
@@ -147,13 +154,16 @@ final class PeekabooModel {
 
     private func photoArrived(_ image: UIImage) {
         let shot = Shot(image: image)
+        let makeCartoon = cartoonMe && DecartClient.isAvailable
         withAnimation(.snappy) {
             shots.insert(shot, at: 0)
             justCaptured = shot
+            revealingCartoon = false
             phase = .celebrating
         }
         if soundOn { Chimes.shared.celebrate() }
         PhotoSaver.save(image)
+        if makeCartoon { cartoonize(shot) }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(1.1))
             withAnimation(.smooth(duration: 0.5)) { justCaptured = nil }
@@ -162,8 +172,36 @@ final class PeekabooModel {
             subjectAttention = false
             if demoRunning {
                 nextAttractor()
-                scheduleNextGlance(after: 2.6)
+                // With Cartoon Me the next look waits for the reveal.
+                if !makeCartoon { scheduleNextGlance(after: 2.6) }
             }
+        }
+    }
+
+    private func cartoonize(_ shot: Shot) {
+        let character = attractor
+        Task { @MainActor in
+            let cartoon = try? await DecartClient.cartoonize(shot.image, as: character)
+            if let cartoon, let i = shots.firstIndex(where: { $0.id == shot.id }) {
+                shots[i].cartoon = cartoon
+                PhotoSaver.save(cartoon)
+                // Reveal it to the kid, unless they're mid-look.
+                if phase != .locked {
+                    cooldownUntil = Date().addingTimeInterval(4)
+                    withAnimation(.snappy) {
+                        revealingCartoon = true
+                        phase = .celebrating
+                    }
+                    if soundOn { Chimes.shared.celebrate() }
+                    try? await Task.sleep(for: .seconds(3.5))
+                    withAnimation(.smooth) {
+                        revealingCartoon = false
+                        phase = .attracting
+                    }
+                    subjectAttention = false
+                }
+            }
+            if demoRunning { scheduleNextGlance(after: 2.0) }
         }
     }
 

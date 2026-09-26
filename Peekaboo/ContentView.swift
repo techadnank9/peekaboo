@@ -282,6 +282,13 @@ private struct ControlDeck: View {
                 }
                 .toggleStyle(.button)
 
+                if DecartClient.isAvailable {
+                    Toggle(isOn: $model.cartoonMe) {
+                        Label("Cartoon Me", systemImage: "wand.and.sparkles")
+                    }
+                    .toggleStyle(.button)
+                }
+
                 Toggle(isOn: $model.soundOn) {
                     Label("Sound", systemImage: model.soundOn ? "speaker.wave.2.fill" : "speaker.slash")
                 }
@@ -361,7 +368,7 @@ private struct RecentShots: View {
                         .frame(height: 64)
                 }
                 ForEach(shots) { shot in
-                    Image(uiImage: shot.image)
+                    Image(uiImage: shot.cartoon ?? shot.image)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 64, height: 64)
@@ -389,6 +396,19 @@ private struct Gallery: View {
                             .scaledToFill()
                             .frame(minHeight: 150)
                             .clipped()
+                        if let cartoon = shot.cartoon {
+                            Image(uiImage: cartoon)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(minHeight: 150)
+                                .clipped()
+                                .overlay(alignment: .topTrailing) {
+                                    Image(systemName: "wand.and.sparkles")
+                                        .padding(6)
+                                        .background(.ultraThinMaterial, in: .circle)
+                                        .padding(6)
+                                }
+                        }
                     }
                 }
             }
