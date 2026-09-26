@@ -47,10 +47,14 @@ final class Chimes: @unchecked Sendable {
 
     func play(_ attractor: Attractor) {
         switch attractor {
-        case .peekaboo: play([(659, 0.16), (784, 0.16), (1047, 0.4)])          // pee-ka-BOO
+        case .peekaboo, .panda: play([(659, 0.16), (784, 0.16), (1047, 0.4)])  // pee-ka-BOO
         case .bubbles: play([(880, 0.08), (0, 0.04), (1175, 0.08), (0, 0.04), (1568, 0.14)])
-        case .starburst: play([(1319, 0.1), (1568, 0.1), (2093, 0.1), (2637, 0.3)])
+        case .twinkle: play([(1319, 0.1), (1568, 0.1), (2093, 0.1), (2637, 0.3)])
         case .puppy: play([(523, 0.12), (0, 0.06), (523, 0.12), (0, 0.06), (784, 0.25)]) // woof woof
+        case .pikachu: play([(1175, 0.1), (1397, 0.1), (0, 0.05), (1175, 0.1), (1760, 0.3)]) // pi-ka-chu
+        case .minion: play([(784, 0.1), (659, 0.1), (784, 0.1), (988, 0.3)])  // ba-na-na
+        case .mickey: play([(523, 0.12), (659, 0.12), (784, 0.12), (659, 0.12), (523, 0.3)]) // whistle
+        case .bunny: play([(1047, 0.08), (1319, 0.08), (1047, 0.08), (1319, 0.2)])
         }
     }
 

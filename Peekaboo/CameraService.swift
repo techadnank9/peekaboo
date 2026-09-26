@@ -6,7 +6,7 @@ import Vision
 /// output that feeds Vision, which reports whether the subject faces the lens.
 final class CameraService: NSObject, @unchecked Sendable {
     let session = AVCaptureSession()
-    var onFace: ((Bool, Double) -> Void)?
+    var onFace: ((Bool, Double, Double) -> Void)?
     var onPhoto: ((UIImage) -> Void)?
 
     private let queue = DispatchQueue(label: "peekaboo.capture")
@@ -108,14 +108,15 @@ extension CameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         try? VNImageRequestHandler(cvPixelBuffer: pixels, options: [:]).perform([request])
 
         guard let face = request.results?.max(by: { $0.boundingBox.area < $1.boundingBox.area }) else {
-            onFace?(false, 0)
+            onFace?(false, 0, 0)
             return
         }
         // Yaw and pitch near zero mean the face points straight at the lens.
+        let signedYaw = face.yaw?.doubleValue ?? 0
         let yaw = abs(face.yaw?.doubleValue ?? 1)
         let pitch = abs(face.pitch?.doubleValue ?? 1)
         let gaze = max(0, 1 - (yaw / 0.6 + pitch / 0.6) / 2)
-        onFace?(true, gaze)
+        onFace?(true, gaze, signedYaw)
     }
 }
 

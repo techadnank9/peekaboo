@@ -3,34 +3,62 @@ import Observation
 
 /// What the subject sees on the outer display.
 enum Attractor: String, CaseIterable, Identifiable {
-    case peekaboo, bubbles, starburst, puppy
+    case peekaboo, pikachu, minion, mickey, puppy, twinkle, bubbles, panda, bunny
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .peekaboo: "Peekaboo"
+        case .peekaboo: "Peekaboo Bear"
+        case .pikachu: "Pikachu"
+        case .minion: "Minion"
+        case .mickey: "Mickey"
+        case .puppy: "Pip"
+        case .twinkle: "Twinkle"
         case .bubbles: "Bubbles"
-        case .starburst: "Sparkles"
-        case .puppy: "Puppy"
+        case .panda: "Panda"
+        case .bunny: "Bunny"
         }
     }
 
     var symbol: String {
         switch self {
-        case .peekaboo: "face.smiling"
-        case .bubbles: "bubbles.and.sparkles"
-        case .starburst: "sparkles"
-        case .puppy: "dog"
+        case .peekaboo: "teddybear.fill"
+        case .pikachu: "bolt.fill"
+        case .minion: "eyeglasses"
+        case .mickey: "music.note"
+        case .puppy: "dog.fill"
+        case .twinkle: "star.fill"
+        case .bubbles: "bubbles.and.sparkles.fill"
+        case .panda: "pawprint.fill"
+        case .bunny: "hare.fill"
         }
     }
 
     var tint: Color {
         switch self {
         case .peekaboo: .orange
-        case .bubbles: .cyan
-        case .starburst: .yellow
+        case .pikachu: .yellow
+        case .minion: .blue
+        case .mickey: .red
         case .puppy: .pink
+        case .twinkle: .purple
+        case .bubbles: .cyan
+        case .panda: .green
+        case .bunny: .mint
+        }
+    }
+
+    /// Lottie animation bundled in CharacterJSON, for the ready-made characters.
+    var animationName: String? {
+        switch self {
+        case .peekaboo: "coucou"
+        case .pikachu: "pikachu"
+        case .minion: "minion"
+        case .mickey: "mickey"
+        case .panda: "panda"
+        case .bunny: "bunny"
+        case .puppy, .twinkle, .bubbles: nil
         }
     }
 }
@@ -67,6 +95,9 @@ final class PeekabooModel {
     var justCaptured: Shot?
     /// How squarely the subject faces the lens, 0...1, from Vision.
     var gaze: Double = 0
+    /// Where the kid is looking, as seen on the outer display: -1 left,
+    /// 0 at the lens, 1 right. Characters run to that side to catch them.
+    var lure: Double = 0
     var faceVisible = false
     /// Whether the fold currently divides the view (tabletop pose).
     var isTabletop = false
@@ -77,17 +108,22 @@ final class PeekabooModel {
     private var cooldownUntil = Date.distantPast
 
     init() {
-        camera.onFace = { [weak self] visible, gaze in
-            Task { @MainActor in self?.faceChanged(visible: visible, gaze: gaze) }
+        camera.onFace = { [weak self] visible, gaze, yaw in
+            Task { @MainActor in self?.faceChanged(visible: visible, gaze: gaze, yaw: yaw) }
         }
         camera.onPhoto = { [weak self] image in
             Task { @MainActor in self?.photoArrived(image) }
         }
     }
 
-    func faceChanged(visible: Bool, gaze: Double) {
+    func faceChanged(visible: Bool, gaze: Double, yaw: Double = 0) {
         faceVisible = visible
         self.gaze = gaze
+        // The outer display faces the kid, so a head turn to the camera's
+        // right is toward the display's left from where the kid stands.
+        // Snap to three positions so characters make clear, springy moves.
+        let side: Double = !visible || abs(yaw) < 0.2 ? 0 : (yaw > 0 ? -1 : 1)
+        if side != lure { lure = side }
         guard phase != .celebrating, Date() >= cooldownUntil else { return }
 
         let looking = visible && gaze > 0.8
@@ -162,7 +198,7 @@ final class PeekabooModel {
                 }
                 let target = subjectAttention ? 0 : wander
                 subjectYaw += (target - subjectYaw) * (subjectAttention ? 0.3 : 0.12)
-                faceChanged(visible: true, gaze: max(0, 1 - abs(subjectYaw) / 0.45))
+                faceChanged(visible: true, gaze: max(0, 1 - abs(subjectYaw) / 0.45), yaw: subjectYaw)
                 try? await Task.sleep(for: .milliseconds(90))
             }
         }

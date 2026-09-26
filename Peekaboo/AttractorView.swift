@@ -1,3 +1,4 @@
+import Lottie
 import SwiftUI
 
 /// The outer display: faces the same way as the camera, so everything here is
@@ -15,18 +16,17 @@ struct AttractorView: View {
                 CelebrationView(photo: model.shots.first?.image)
                     .transition(.scale.combined(with: .opacity))
             case .attracting, .locked:
+                attractor
+                    .id(model.attractor)
+                    .transition(.push(from: .trailing))
                 VStack(spacing: 0) {
                     LensBeacon(tint: model.attractor.tint, locked: model.phase == .locked)
                         .padding(.top, 14)
                     Spacer(minLength: 0)
-                    attractor
-                        .id(model.attractor)
-                        .transition(.push(from: .trailing))
-                    Spacer(minLength: 0)
                     Text(model.phase == .locked ? "Hold still!" : "Look up here!")
                         .font(.system(.title2, design: .rounded, weight: .heavy))
                         .foregroundStyle(.white)
-                        .contentTransition(.numericText())
+                        .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
                         .padding(.bottom, 28)
                 }
             }
@@ -42,12 +42,21 @@ struct AttractorView: View {
             .ignoresSafeArea()
     }
 
+    /// Every character goes where the kid is looking, then leads them up to
+    /// the lens.
     @ViewBuilder private var attractor: some View {
+        let locked = model.phase == .locked
         switch model.attractor {
-        case .peekaboo: PeekabooFace()
-        case .bubbles: BubbleField()
-        case .starburst: Starburst()
-        case .puppy: WigglePuppy()
+        case .puppy:
+            PuppyCharacter(locked: locked, lure: model.lure)
+        case .bubbles:
+            BubblesCharacter(locked: locked, lure: model.lure)
+        case .twinkle:
+            TwinkleCharacter(locked: locked, lure: model.lure)
+        default:
+            LureStage(lure: model.lure, locked: locked) {
+                LottieCharacter(name: model.attractor.animationName ?? "")
+            }
         }
     }
 }
@@ -69,89 +78,6 @@ private struct LensBeacon: View {
             .foregroundStyle(.white)
             .offset(y: locked ? -4 : -6 * t)
         } animation: { _ in .easeInOut(duration: 0.5) }
-    }
-}
-
-private struct PeekabooFace: View {
-    var body: some View {
-        PhaseAnimator([false, true]) { open in
-            ZStack {
-                Circle().fill(.white).frame(width: 190, height: 190)
-                HStack(spacing: 44) {
-                    Circle().frame(width: 28, height: 28)
-                    Circle().frame(width: 28, height: 28)
-                }
-                .offset(y: -18)
-                Capsule().frame(width: open ? 70 : 40, height: open ? 44 : 14).offset(y: 42)
-                HStack(spacing: open ? 170 : 8) {
-                    Image(systemName: "hand.raised.fill")
-                    Image(systemName: "hand.raised.fill").scaleEffect(x: -1)
-                }
-                .font(.system(size: 92))
-                .foregroundStyle(.yellow)
-                .offset(y: -10)
-            }
-            .foregroundStyle(.black)
-        } animation: { open in open ? .spring(duration: 0.35, bounce: 0.5) : .easeIn(duration: 0.25).delay(0.9) }
-    }
-}
-
-private struct BubbleField: View {
-    var body: some View {
-        TimelineView(.animation) { context in
-            Canvas { gc, size in
-                let t = context.date.timeIntervalSinceReferenceDate
-                for i in 0..<14 {
-                    let seed = Double(i) * 1.7
-                    let speed = 40 + Double(i % 5) * 18
-                    let y = size.height - (t * speed + seed * 90).truncatingRemainder(dividingBy: size.height + 80) + 40
-                    let x = size.width / 2 + sin(t * 1.3 + seed) * size.width * 0.35
-                    let r = 16 + Double(i % 4) * 9
-                    let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
-                    gc.stroke(Path(ellipseIn: rect), with: .color(.white), lineWidth: 4)
-                    gc.fill(Path(ellipseIn: rect.insetBy(dx: r * 0.55, dy: r * 0.55).offsetBy(dx: -r * 0.3, dy: -r * 0.3)),
-                            with: .color(.white.opacity(0.8)))
-                }
-            }
-        }
-    }
-}
-
-private struct Starburst: View {
-    var body: some View {
-        TimelineView(.animation) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            ZStack {
-                ForEach(0..<8) { i in
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 34))
-                        .foregroundStyle(i.isMultiple(of: 2) ? .white : .yellow)
-                        .offset(y: -80 - 20 * sin(t * 3 + Double(i)))
-                        .rotationEffect(.degrees(Double(i) * 45 + t * 40))
-                }
-                Image(systemName: "sparkles")
-                    .font(.system(size: 90))
-                    .foregroundStyle(.white)
-                    .scaleEffect(1 + 0.12 * sin(t * 4))
-            }
-        }
-    }
-}
-
-private struct WigglePuppy: View {
-    var body: some View {
-        PhaseAnimator([-12.0, 12.0]) { angle in
-            Image(systemName: "dog.fill")
-                .font(.system(size: 150))
-                .foregroundStyle(.white)
-                .rotationEffect(.degrees(angle), anchor: .bottom)
-                .overlay(alignment: .topTrailing) {
-                    Image(systemName: "tennisball.fill")
-                        .font(.system(size: 44))
-                        .foregroundStyle(.yellow)
-                        .offset(x: 30, y: angle * 2 - 30)
-                }
-        } animation: { _ in .easeInOut(duration: 0.4) }
     }
 }
 
@@ -217,6 +143,48 @@ private struct CelebrationView: View {
         }
         .onAppear {
             withAnimation(.spring(duration: 0.5, bounce: 0.45)) { landed = true }
+        }
+    }
+}
+
+/// A professionally animated character, played full screen and looped.
+struct LottieCharacter: View {
+    let name: String
+
+    var body: some View {
+        LottieView(animation: .named(name))
+            .playing(loopMode: .loop)
+            .resizable()
+            .scaledToFit()
+    }
+}
+
+/// Moves a whole character around the outer display: it hops over to the
+/// side the kid is looking at, then bounds up toward the lens at the top.
+struct LureStage<Content: View>: View {
+    var lure: Double
+    var locked: Bool
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        GeometryReader { geo in
+            let atLens = locked || abs(lure) < 0.15
+            TimelineView(.animation) { context in
+                let t = context.date.timeIntervalSinceReferenceDate
+                let speed = locked ? 7.0 : 4.0
+                let bounce = abs(sin(t * speed))
+                content
+                    .frame(width: geo.size.width * 0.92, height: geo.size.height * 0.6)
+                    // Squash at the bottom of each hop, stretch at the top.
+                    .scaleEffect(x: 1 + 0.05 * (1 - bounce), y: 1 - 0.05 * (1 - bounce), anchor: .bottom)
+                    .offset(y: -bounce * geo.size.height * (locked ? 0.06 : 0.035))
+                    .rotationEffect(.degrees(atLens ? sin(t * 2) * 4 : lure * 10))
+            }
+            .offset(x: atLens ? 0 : lure * geo.size.width * 0.28,
+                    y: atLens ? -geo.size.height * 0.08 : geo.size.height * 0.1)
+            .frame(width: geo.size.width, height: geo.size.height)
+            .animation(.spring(duration: 0.9, bounce: 0.35), value: lure)
+            .animation(.spring(duration: 0.6, bounce: 0.45), value: locked)
         }
     }
 }
